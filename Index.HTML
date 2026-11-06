@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reel Ledger – Movie Watchlist</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>
+tailwind.config = { theme: { extend: {
+  colors: { bg:'#ECEEF5', ink:'#1D1B33', muted:'#5E5C78', line:'#D5D8E6', field:'#C3C7DA', plum:'#3B1F4A', 'plum-ink':'#F5EEF8', accent:'#F2B632', danger:'#B3263E', ok:'#17634A', 'ok-bg':'#D6EFE5' },
+  fontFamily: { sans:['"DM Sans"','system-ui','sans-serif'], display:['"Bricolage Grotesque"','"DM Sans"','sans-serif'] }
+}}}
+</script>
+</head>
+<body class="bg-bg font-sans text-ink">
+
+<!-- Parent is relative; the login view is absolute on top of it. Hiding it reveals the dashboard. -->
+<div id="app" class="relative min-h-screen">
+
+  <!-- LOGIN VIEW -->
+  <main id="login-view" class="absolute inset-0 z-50 grid min-h-screen bg-bg lg:grid-cols-2">
+    <section class="flex flex-col justify-between gap-10 bg-plum p-8 text-plum-ink sm:p-12 lg:p-16">
+      <p class="font-display text-2xl font-bold">Reel Ledger</p>
+      <div>
+        <h1 class="max-w-lg font-display text-4xl font-extrabold leading-[1.05] sm:text-5xl lg:text-6xl">Know what you’ve watched and what’s next.</h1>
+        <p class="mt-5 max-w-sm text-lg opacity-85">Track runtime, ratings and your backlog in one place.</p>
+      </div>
+      <p class="text-sm opacity-75">Sign in to open your watchlist.</p>
+    </section>
+    <section class="flex items-center justify-center p-6 sm:p-12">
+      <form id="login-form" class="w-full max-w-sm space-y-5" novalidate>
+        <h2 class="font-display text-3xl font-bold">Sign in</h2>
+        <div>
+          <label for="email" class="mb-1.5 block text-sm font-medium">Email</label>
+          <input id="email" type="email" autocomplete="off" placeholder="you@example.com" class="h-12 w-full rounded-[10px] border border-field bg-white px-3.5">
+        </div>
+        <div>
+          <label for="password" class="mb-1.5 block text-sm font-medium">Password</label>
+          <input id="password" type="password" autocomplete="off" class="h-12 w-full rounded-[10px] border border-field bg-white px-3.5">
+        </div>
+        <p id="login-error" role="alert" class="hidden text-sm font-medium text-danger">That email and password don’t match. Check both and try again.</p>
+        <button class="h-12 w-full rounded-[10px] bg-accent font-bold hover:brightness-95">Sign in</button>
+        <p class="text-[13px] text-muted">Practice only: maya@reel.test / popcorn1. Real apps never check passwords this way.</p>
+      </form>
+    </section>
+  </main>
+
+  <!-- DASHBOARD VIEW (hidden until login matches) -->
+  <div id="dash-view" class="hidden">
+    <header class="border-b border-line bg-white">
+      <div class="mx-auto flex max-w-[1200px] items-center justify-between px-4 py-4 sm:px-8">
+        <p class="font-display text-[22px] font-bold">Reel Ledger</p>
+        <button id="logout" class="h-[46px] rounded-[10px] border border-field bg-white px-4 font-medium hover:bg-bg">Sign out</button>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-[1200px] space-y-6 px-4 py-6 sm:px-8 sm:py-8">
+      <!-- Stats -->
+      <section aria-label="Stats" class="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-[1.4fr_1fr_1fr]">
+        <div class="col-span-2 rounded-2xl bg-plum p-7 text-plum-ink md:col-span-4 lg:col-span-1">
+          <p class="text-sm opacity-85">Time watched</p>
+          <p id="stat-runtime" class="mt-1.5 font-display text-5xl font-extrabold lg:text-6xl">0h 0m</p>
+        </div>
+        <div class="col-span-1 rounded-2xl border border-line bg-white p-6 md:col-span-2 lg:col-span-1">
+          <p class="text-sm text-muted">Average rating</p>
+          <p class="mt-1.5 font-display text-4xl font-bold lg:text-[44px]"><span id="stat-rating">–</span><span class="text-lg font-medium text-muted"> / 10</span></p>
+        </div>
+        <div class="col-span-1 rounded-2xl border border-line bg-white p-6 md:col-span-2 lg:col-span-1">
+          <p class="text-sm text-muted">Still to watch</p>
+          <p id="stat-unwatched" class="mt-1.5 font-display text-4xl font-bold lg:text-[44px]">0</p>
+        </div>
+      </section>
+
+      <div class="grid items-start gap-6 lg:grid-cols-[1fr_320px]">
+        <!-- Toolbar + list -->
+        <section class="min-w-0 space-y-4">
+          <div class="flex flex-col gap-3 sm:flex-row">
+            <input id="search" type="search" aria-label="Search titles" placeholder="Search titles" class="h-[46px] flex-1 rounded-[10px] border border-field bg-white px-3.5">
+            <select id="genre" aria-label="Filter by genre" class="h-[46px] rounded-[10px] border border-field bg-white px-3.5"></select>
+          </div>
+          <div id="seg" role="group" aria-label="Watched status" class="inline-flex gap-1 rounded-[10px] border border-line bg-white p-1 text-sm font-medium">
+            <button data-w="all" class="rounded-[7px] px-4 py-2">All</button>
+            <button data-w="watched" class="rounded-[7px] px-4 py-2">Watched</button>
+            <button data-w="unwatched" class="rounded-[7px] px-4 py-2">Unwatched</button>
+          </div>
+          <p id="count" aria-live="polite" class="text-sm text-muted"></p>
+          <ul id="list" class="space-y-3"></ul>
+        </section>
+
+        <!-- Add form -->
+        <aside class="rounded-2xl border border-line bg-white p-6 lg:sticky lg:top-6">
+          <h2 class="mb-4 font-display text-xl font-bold">Add a title</h2>
+          <form id="add-form" class="space-y-4" novalidate>
+            <div>
+              <label for="n-title" class="mb-1.5 block text-sm font-medium">Title</label>
+              <input id="n-title" type="text" class="h-[46px] w-full rounded-[10px] border border-field px-3.5">
+            </div>
+            <div>
+              <label for="n-genre" class="mb-1.5 block text-sm font-medium">Genre</label>
+              <select id="n-genre" class="h-[46px] w-full rounded-[10px] border border-field bg-white px-3.5"></select>
+            </div>
+            <div>
+              <label for="n-runtime" class="mb-1.5 block text-sm font-medium">Runtime (minutes)</label>
+              <input id="n-runtime" type="number" min="1" class="h-[46px] w-full rounded-[10px] border border-field px-3.5">
+            </div>
+            <p id="add-error" role="alert" class="hidden text-sm font-medium text-danger"></p>
+            <button class="h-12 w-full rounded-[10px] bg-accent font-bold hover:brightness-95">Add to watchlist</button>
+          </form>
+        </aside>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
